@@ -1,0 +1,5 @@
+menu1,get,set,"Input Menu1Val: "
+	menu1a,get,setter,"Input Menu1aVal: "
+	menu1b,,setter
+		menu1b_1,,setter
+menu2,get
