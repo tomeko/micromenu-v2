@@ -1,87 +1,60 @@
-#include <avr/io.h>
-#include <avr/pgmspace.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 #include "MicroMenu.h"
+#include "usart.h"
 
+int menu1b_val = 42;	// an example variable that can be set from the menu
 
-/*** DUMY CODE ***/
-enum ButtonValues
+/**
+ Menu1's setter (EnterFunc), called when menu item is selected
+**/
+void menu1a_setter(void * arg)
 {
-	BUTTON_NONE,
-	BUTTON_UP,
-	BUTTON_DOWN,
-	BUTTON_LEFT,
-	BUTTON_RIGHT,
-	BUTTON_ENTER,
-};
-
-enum ButtonValues GetButtonPress(void)
-{
-	return BUTTON_NONE;
-};
-/*** END DUMY CODE ***/
-
-
-/** Example menu item specific enter callback function, run when the associated menu item is entered. */
-static void Level1Item1_Enter(void)
-{
-	puts("ENTER");
+	printf("\r\nMenu1a Func");
 }
 
-/** Example menu item specific select callback function, run when the associated menu item is selected. */
-static void Level1Item1_Select(void)
+/**
+ Menu1b's setter (EnterFunc), since arg_txt is set, this will prompt for an input, then send that input here via arg
+**/
+void menu1b_setter(void * arg)
 {
-	puts("SELECT");
+	menu1b_val = atoi(arg);		// arg is input from "Enter menu1b val: "
 }
 
-/** Generic function to write the text of a menu.
- *
- *  \param[in] Text   Text of the selected menu to write, in \ref MENU_ITEM_STORAGE memory space
- */
-static void Generic_Write(const char* Text)
+/**
+ Menu1b's getter. If defined, will print something besides the menu item
+**/
+void menu1b_getter(void * arg)
 {
-	if (Text)
-		puts_P(Text);
+	printf("%d", menu1b_val);
 }
 
-MENU_ITEM(Menu_1, Menu_2, Menu_3, NULL_MENU, Menu_1_1 , Level1Item1_Select, Level1Item1_Enter, "1");
-MENU_ITEM(Menu_2, Menu_3, Menu_1, NULL_MENU, NULL_MENU, NULL              , NULL             , "2");
-MENU_ITEM(Menu_3, Menu_1, Menu_2, NULL_MENU, NULL_MENU, NULL              , NULL             , "3");
+/**
+ Menu2 setter. (EnterFunc), called when menu item is selected
+**/
+void menu2_setter(void * arg)
+{
+	printf("\r\nMenu2 Func");
+}
 
-MENU_ITEM(Menu_1_1, Menu_1_2, Menu_1_2, NULL_MENU, NULL_MENU, NULL, NULL, "1.1");
-MENU_ITEM(Menu_1_2, Menu_1_1, Menu_1_1, NULL_MENU, NULL_MENU, NULL, NULL, "1.2");
+/************************** GENERATED MENU DEFINES HERE (or write it yourself if you dare) ************************************/
+
+/* Reference: MENU_ITEM(Name, Next, Previous, Parent, Child, SelectFunc, EnterFunc, arg_txt, Text) */
+MENU_ITEM(Menu_Trunk, Menu1, NULL_MENU, NULL_MENU, Menu1, NULL, NULL, NULL, "Main Menu");
+	MENU_ITEM(Menu1, Menu2, NULL_MENU, Menu_Trunk, Menu1a, NULL, NULL, NULL, "Menu1");
+		MENU_ITEM(Menu1a, Menu1b, NULL_MENU, Menu1, NULL_MENU, NULL, menu1a_setter , NULL, "Menu1a");
+		MENU_ITEM(Menu1b, NULL_MENU, Menu1a, Menu1, NULL_MENU, menu1b_getter, menu1b_setter , "Enter menu1b val: ", "Menu1b");
+	MENU_ITEM(Menu2, NULL_MENU, Menu1, Menu_Trunk, NULL_MENU, NULL, menu2_setter, NULL, "Menu2");
+
+/******************************************************************************************************************************/
 
 int main(void)
 {
-	/* Set up the default menu text write callback, and navigate to an absolute menu item entry. */
-	Menu_SetGenericWriteCallback(Generic_Write);
-	Menu_Navigate(&Menu_1);
+
+	usart_init();
+	menu_setbase(&Menu_Trunk);			// set root of menu
+	Menu_SetHeader("MyMenuHeader");		// set header to print in every menu
 
     while (1)
-    {
-		/* Example usage of MicroMenu - here you can create your custom menu navigation system; you may wish to perform
-		 * other tasks while detecting key presses, enter sleep mode while waiting for user input, etc.
-		 */
-		switch (GetButtonPress())
-		{
-			case BUTTON_UP:
-				Menu_Navigate(MENU_PREVIOUS);
-				break;
-			case BUTTON_DOWN:
-				Menu_Navigate(MENU_NEXT);
-				break;
-			case BUTTON_LEFT:
-				Menu_Navigate(MENU_PARENT);
-				break;
-			case BUTTON_RIGHT:
-				Menu_Navigate(MENU_CHILD);
-				break;
-			case BUTTON_ENTER:
-				Menu_EnterCurrentItem();
-				break;
-			default:
-				break;
-		}
-    }
+		menu_console(usart_getc());		// input loop for menu console
 }
